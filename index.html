@@ -568,9 +568,27 @@
                     statusEl.style.backgroundColor = "#d4edda"; // Verde pastel
                     statusEl.style.color = "#155724";
                 } else {
-                    statusEl.innerText = `Sistema pronto. Sem internet (Modo Manual Ativado).`;
-                    statusEl.style.backgroundColor = "#e2e3e5"; // Cinza pastel
-                    statusEl.style.color = "#383d41";
+                    // Sem internet: preencher 15 números aleatórios automaticamente
+                    const numerosAleatorios = [];
+                    while (numerosAleatorios.length < 15) {
+                        const n = Math.floor(Math.random() * 25) + 1;
+                        if (!numerosAleatorios.includes(n)) numerosAleatorios.push(n);
+                    }
+
+                    dezenasSelecionadas.clear();
+                    const bolasVisuais = document.querySelectorAll('.bola');
+                    bolasVisuais.forEach(b => b.classList.remove('ativa', 'bloqueada'));
+
+                    numerosAleatorios.forEach(numero => {
+                        dezenasSelecionadas.add(numero);
+                        bolasVisuais[numero - 1].classList.add('ativa');
+                    });
+
+                    atualizarEstadoInterface();
+
+                    statusEl.innerText = `Sistema pronto. Sem internet (Modo Manual Ativado). 15 números aleatórios foram preenchidos automaticamente.`;
+                    statusEl.style.backgroundColor = "#fff3cd"; // Amarelo pastel (aviso)
+                    statusEl.style.color = "#856404";
                 }
             } else {
                 statusEl.innerText = `Erro Crítico: Arquivo model.json não encontrado.`;

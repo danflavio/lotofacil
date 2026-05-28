@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <title>Lotofácil IA - Gerador Inteligente</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
+    <style>
+        :root {
+            /* Paleta Escura Tonalizada (Padrão) */
+            --bg-color: #0f1117;
+            --card-bg: #1a1d2e;
+            --primary: #7c6fff;
+            --primary-hover: #56e6a7;
+            --text-main: #e2e4f0;
+            --text-muted: #7a7f9a;
+            --ball-bg: #252840;
+            --ball-border: #3a3f5c;
+            --shadow: rgba(0, 0, 0, 0.4) 0px 8px 24px;
+            --heading-color: #f0f1f7;
+            --input-bg: #252840;
+            --input-focus-bg: #2e3250;
+            --status-bg: #2a2520;
+            --status-color: #f0c040;
+            --disabled-bg: #2a2d40;
+            --disabled-color: #555a70;
+            --bloqueada-bg: #1e2035;
+            --contador-bg: #1e2138;
+            --bola-ativa-shadow: rgba(86, 230, 167, 0.4);
+            --btn-shadow: rgba(124, 111, 255, 0.3);
+            --btn-hover-shadow: rgba(86, 230, 167, 0.35);
+            --ticket-border-color: var(--primary);
+            --numero-bg: #252840;
+            --numero-color: #e2e4f0;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f7f9fc;
+            --card-bg: #ffffff;
+            --primary: #7c6fff;
+            --primary-hover: #56e6a7;
+            --text-main: #4a4e69;
+            --text-muted: #9ca3af;
+            --ball-bg: #f8f9fa;
+            --ball-border: #e5e7eb;
+            --shadow: rgba(149, 157, 165, 0.15) 0px 8px 24px;
+            --heading-color: #2b2d42;
+            --input-bg: #f8f9fa;
+            --input-focus-bg: #ffffff;
+            --status-bg: #fff3cd;
+            --status-color: #856404;
+            --disabled-bg: #e5e7eb;
+            --disabled-color: #9ca3af;
+            --bloqueada-bg: #f3f4f6;
+            --contador-bg: #f8f9fa;
+            --bola-ativa-shadow: rgba(86, 230, 167, 0.6);
+            --btn-shadow: rgba(124, 111, 255, 0.3);
+            --btn-hover-shadow: rgba(86, 230, 167, 0.4);
+            --ticket-border-color: var(--primary);
+            --numero-bg: #f8f9fa;
+            --numero-color: #2b2d42;
+        }
+        
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            padding: 20px 15px; 
+            max-width: 500px; 
+            margin: 0 auto; 
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .app-container { 
+            background-color: var(--card-bg); 
+            padding: 30px 25px; 
+            border-radius: 24px; 
+            box-shadow: var(--shadow); 
+            border: 1px solid var(--ball-border);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        
+        h1 { 
+            margin: 0 0 8px 0; 
+            color: var(--heading-color); 
+            font-size: 1.6rem; 
+            text-align: center;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 0.95rem; 
+            color: var(--text-muted); 
+            text-align: center;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        /* Grid das 25 Bolas */
+        .grid-bolas { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 12px; 
+            margin: 25px 0; 
+        }
+        
+        .bola { 
+            aspect-ratio: 1; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background-color: var(--ball-bg); 
+            color: var(--text-muted); 
+            font-size: 1.1rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.25s ease;
+            user-select: none;
+            border: 2px solid var(--ball-border);
+        }
+        
+        .bola:hover:not(.bloqueada) { 
+            border-color: var(--primary); 
+            color: var(--primary); 
+        }
+        
+        .bola.ativa { 
+            background-color: var(--primary-hover);
+            color: #1a1d2e; 
+            border-color: var(--primary-hover); 
+            box-shadow: 0 4px 12px var(--bola-ativa-shadow); 
+            transform: scale(1.08);
+        }
+        
+        .bola.bloqueada:not(.ativa) { 
+            opacity: 0.3; 
+            cursor: not-allowed; 
+            background-color: var(--bloqueada-bg);
+        }
+
+        .contador { 
+            text-align: center; 
+            margin-bottom: 15px; 
+            font-size: 0.95rem;
+            color: var(--text-muted); 
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--ball-border);
+        }
+        
+        .contador span { 
+            color: #2b2d42; 
+            font-weight: 800;
+        }
+
+        .controles { 
+            display: flex; 
+            align-items: flex-end;
+            gap: 15px; 
+            margin-top: 30px;
+        }
+        
+        .input-group { 
+            flex: 0 0 80px; 
+        }
+        
+        label { 
+            display: block; 
+            font-size: 0.75rem; 
+            color: var(--text-muted); 
+            margin-bottom: 6px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+        
+        input[type="number"] { 
+            width: 100%; 
+            padding: 14px; 
+            background-color: #f8f9fa; 
+            border: 1px solid var(--ball-border); 
+            color: var(--text-main); 
+            border-radius: 14px; 
+            text-align: center; 
+            font-size: 1.1rem; 
+            outline: none;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        
+        input[type="number"]:focus {
+            border-color: var(--primary);
+            background-color: #fff;
+        }
+        
+        button { 
+            flex: 2; 
+            padding: 14px; 
+            background-color: var(--primary); 
+            color: #2b2d42; 
+            border: none; 
+            border-radius: 14px; 
+            font-size: 1.05rem;
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+            box-shadow: 0 4px 15px rgba(160, 196, 255, 0.4);
+        }
+        
+        button:hover:not(:disabled) { 
+            background-color: var(--primary-hover); 
+            box-shadow: 0 6px 20px rgba(185, 251, 192, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        button:disabled { 
+            background-color: #e5e7eb; 
+            color: #9ca3af; 
+            cursor: not-allowed; 
+            box-shadow: none;
+            transform: none;
+        }
+
+        #status { 
+            font-size: 0.85rem; 
+            text-align: center; 
+            margin-bottom: 25px; 
+            padding: 10px;
+            border-radius: 10px;
+            background-color: #fff3cd; /* Amarelo pastel suave */
+            color: #856404;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        
+        /* Estilo dos Resultados gerados */
+        .resultado-container {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .ticket { 
+            background-color: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 20px; 
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--primary); /* Linha de destaque no topo */
+        }
+        
+        .ticket-header {
+            color: var(--text-muted); 
+            font-size: 0.85rem; 
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        
+        .ticket-numeros {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .numero-sorteado { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            width: 36px; 
+            height: 36px;
+            background-color: #f8f9fa;
+            color: #2b2d42;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.95rem;
+            border: 1px solid var(--ball-border);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <h1>Lotofácil IA</h1>
+        <p class="subtitle">Selecione o último sorteio para basear a inteligência matemática.</p>
+        
+        <div id="status">Iniciando sistema...</div>
+        
+        <div class="contador">Dezenas Selecionadas: <span id="contadorTexto">0</span> de 15</div>
+        
+        <div class="grid-bolas" id="gridBolas"></div>
+
+        <div class="controles">
+            <div class="input-group">
+                <label>Jogos</label>
+                <input type="number" id="inputQuantidade" value="1" min="1" max="10">
+            </div>
+            <button id="btnPrever" onclick="executarPredicao()" disabled>Gerar Jogos</button>
+        </div>
+    </div>
+
+    <div id="resultadosContainer" class="resultado-container"></div>
+
+    <script>
+        let modelo;
+        let dezenasSelecionadas = new Set();
+        const MAX_SELECAO = 15;
+
+        // 1. CARREGAMENTO DO MODELO OFFLINE
+        async function carregarModelo() {
+            try {
+                modelo = await tf.loadLayersModel('./model.json');
+                return true;
+            } catch (error) {
+                console.error("Erro do TFJS:", error);
+                document.getElementById('status').innerText = `Erro: ${error.message}`;
+                return false;
+            }
+        }
+
+        // 2. CONSTRUÇÃO DA INTERFACE DO GRID
+        function iniciarGrid() {
+            const grid = document.getElementById('gridBolas');
+            for (let i = 1; i <= 25; i++) {
+                const bola = document.createElement('div');
+                bola.className = 'bola';
+                bola.innerText = i.toString().padStart(2, '0');
+                
+                bola.addEventListener('click', () => {
+                    toggleDezena(i, bola);
+                });
+                
+                grid.appendChild(bola);
+            }
+        }
+
+        function toggleDezena(numero, elementoVisual) {
+            if (dezenasSelecionadas.has(numero)) {
+                dezenasSelecionadas.delete(numero);
+                elementoVisual.classList.remove('ativa');
+            } else {
+                if (dezenasSelecionadas.size < MAX_SELECAO) {
+                    dezenasSelecionadas.add(numero);
+                    elementoVisual.classList.add('ativa');
+                }
+            }
+            atualizarEstadoInterface();
+        }
+
+        function atualizarEstadoInterface() {
+            const count = dezenasSelecionadas.size;
+            document.getElementById('contadorTexto').innerText = count;
+            
+            const bolas = document.querySelectorAll('.bola');
+            const botaoPrever = document.getElementById('btnPrever');
+
+            if (count === MAX_SELECAO) {
+                botaoPrever.disabled = false;
+                bolas.forEach(b => {
+                    if (!b.classList.contains('ativa')) b.classList.add('bloqueada');
+                });
+            } else {
+                botaoPrever.disabled = true;
+                bolas.forEach(b => b.classList.remove('bloqueada'));
+            }
+        }
+
+        // 3. ROBÔ DE SINCRONIZAÇÃO COM A CAIXA
+        async function autoPreencherUltimoSorteio() {
+            const statusEl = document.getElementById('status');
+            
+            try {
+                // Proxy público para contornar o bloqueio de segurança da Caixa
+                const urlCaixa = encodeURIComponent('https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/');
+                const proxyUrl = `https://api.allorigins.win/raw?url=${urlCaixa}`;
+                
+                const response = await fetch(proxyUrl, { cache: "no-store" });
+                if (!response.ok) throw new Error("Acesso negado pela Caixa");
+                
+                const dados = await response.json();
+                const dezenasSorteadas = dados.listaDezenas.map(n => parseInt(n));
+
+                dezenasSelecionadas.clear();
+                document.querySelectorAll('.bola').forEach(b => {
+                    b.classList.remove('ativa', 'bloqueada');
+                });
+
+                const bolasVisuais = document.querySelectorAll('.bola');
+                dezenasSorteadas.forEach(numero => {
+                    const bolaAlvo = bolasVisuais[numero - 1]; 
+                    dezenasSelecionadas.add(numero);
+                    bolaAlvo.classList.add('ativa');
+                });
+
+                atualizarEstadoInterface();
+                return dados.numero;
+                
+            } catch (erro) {
+                console.warn("Modo Offline Ativado:", erro);
+                return null;
+            }
+        }
+
+        // 4. MOTOR MATEMÁTICO E GERAÇÃO
+        async function executarPredicao() {
+            if (!modelo) {
+                alert("O sistema matemático está offline.");
+                return;
+            }
+
+            const quantidade = parseInt(document.getElementById('inputQuantidade').value);
+            const container = document.getElementById('resultadosContainer');
+            container.innerHTML = ""; 
+            
+            const btn = document.getElementById('btnPrever');
+            btn.innerText = "Processando...";
+            btn.disabled = true;
+
+            setTimeout(async () => {
+                let arrayDezenas = Array.from(dezenasSelecionadas).sort((a, b) => a - b);
+                let dezenasNormalizadas = arrayDezenas.map(x => (x - 1) / 24.0);
+                const tensorEntrada = tf.tensor2d([dezenasNormalizadas]);
+
+                const tensorPredicao = modelo.predict(tensorEntrada);
+                const probabilidadesBase = await tensorPredicao.data(); 
+
+                for (let i = 0; i < quantidade; i++) {
+                    let probabilidadesAtuais = Array.from(probabilidadesBase);
+
+                    // Ruído paramétrico para diferenciar cartelas (+/- 4%)
+                    if (i > 0) {
+                        probabilidadesAtuais = probabilidadesAtuais.map(p => p + (Math.random() * 0.08) - 0.04);
+                    }
+
+                    let mapaProbabilidades = probabilidadesAtuais.map((prob, index) => {
+                        return { dezena: index + 1, probabilidade: prob };
+                    });
+
+                    mapaProbabilidades.sort((a, b) => b.probabilidade - a.probabilidade);
+                    let top15 = mapaProbabilidades.slice(0, 15).map(item => item.dezena).sort((a, b) => a - b);
+
+                    let htmlBolas = top15.map(n => `<div class="numero-sorteado">${n.toString().padStart(2, '0')}</div>`).join('');
+                    
+                    const div = document.createElement('div');
+                    div.className = 'ticket';
+                    div.innerHTML = `
+                        <div class="ticket-header">Jogo Inteligente 0${i + 1}</div>
+                        <div class="ticket-numeros">${htmlBolas}</div>
+                    `;
+                    container.appendChild(div);
+                }
+                
+                tensorEntrada.dispose();
+                tensorPredicao.dispose();
+                
+                btn.innerText = "Gerar Jogos";
+                btn.disabled = false;
+                
+                // Rola a tela suavemente para mostrar os resultados
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        // 5. INICIALIZAÇÃO ASSÍNCRONA E SILENCIOSA
+        async function bootSistema() {
+            iniciarGrid();
+            
+            const statusEl = document.getElementById('status');
+            
+            // Roda o modelo e a API da caixa ao mesmo tempo
+            const [modeloCarregado, numeroSorteio] = await Promise.all([
+                carregarModelo(),
+                autoPreencherUltimoSorteio()
+            ]);
+
+            if (modeloCarregado) {
+                if (numeroSorteio) {
+                    statusEl.innerText = `Pronto! Sorteio atualizado: #${numeroSorteio}`;
+                    statusEl.style.backgroundColor = "#d4edda"; // Verde pastel
+                    statusEl.style.color = "#155724";
+                } else {
+                    statusEl.innerText = `Sistema pronto. Sem internet (Modo Manual Ativado).`;
+                    statusEl.style.backgroundColor = "#e2e3e5"; // Cinza pastel
+                    statusEl.style.color = "#383d41";
+                }
+            } else {
+                statusEl.innerText = `Erro Crítico: Arquivo model.json não encontrado.`;
+                statusEl.style.backgroundColor = "#f8d7da"; // Vermelho pastel
+                statusEl.style.color = "#721c24";
+            }
+        }
+
+        bootSistema();
+    </script>
+</body>
+</html>

@@ -554,10 +554,8 @@
                 for (let i = 0; i < quantidade; i++) {
                     let probabilidadesAtuais = Array.from(probabilidadesBase);
 
-                    // Ruído paramétrico para diferenciar cartelas (+/- 4%)
-                    if (i > 0) {
-                        probabilidadesAtuais = probabilidadesAtuais.map(p => p + (Math.random() * 0.08) - 0.04);
-                    }
+                    // Ruído paramétrico para diferenciar cartelas (+/- 6%) — aplicado sempre
+                    probabilidadesAtuais = probabilidadesAtuais.map(p => p + (Math.random() * 0.12) - 0.06);
 
                     let mapaProbabilidades = probabilidadesAtuais.map((prob, index) => {
                         return { dezena: index + 1, probabilidade: prob };
